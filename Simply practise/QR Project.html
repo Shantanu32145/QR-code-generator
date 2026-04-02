@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Generator</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f5f3ee;
+      --surface: #ffffff;
+      --border: #e2dfd8;
+      --text: #1a1916;
+      --muted: #7a7870;
+      --accent: #2d2d2b;
+      --accent-light: #f0ede6;
+      --green: #2a6b45;
+      --green-bg: #e8f4ed;
+      --red: #c0392b;
+      --red-bg: #fdecea;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 3rem 1rem;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+    }
+
+    header {
+      margin-bottom: 2.5rem;
+    }
+
+    header h1 {
+      font-size: 1.6rem;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      color: var(--text);
+    }
+
+    header p {
+      font-size: 0.875rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Type tabs */
+    .tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    .tab {
+      padding: 6px 14px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: transparent;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.8125rem;
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tab:hover { border-color: var(--accent); color: var(--text); }
+
+    .tab.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+      font-weight: 500;
+    }
+
+    /* Form fields */
+    .field { margin-bottom: 1rem; }
+    .field:last-child { margin-bottom: 0; }
+
+    label {
+      display: block;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--muted);
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9375rem;
+      color: var(--text);
+      background: var(--bg);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input[type="text"]:focus,
+    input[type="email"]:focus,
+    input[type="password"]:focus {
+      border-color: var(--accent);
+      background: #fff;
+    }
+
+    /* Drop zone */
+    .drop-zone {
+      border: 1.5px dashed var(--border);
+      border-radius: var(--radius-sm);
+      padding: 2rem 1rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.15s;
+      background: var(--bg);
+    }
+
+    .drop-zone:hover, .drop-zone.over {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    .drop-zone input { display: none; }
+
+    .drop-icon {
+      font-size: 1.75rem;
+      margin-bottom: 8px;
+    }
+
+    .drop-zone p {
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+
+    .drop-zone span {
+      font-size: 0.8125rem;
+      color: var(--muted);
+      display: block;
+      margin-top: 4px;
+    }
+
+    .media-preview {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--bg);
+    }
+
+    .media-preview img,
+    .media-preview video {
+      width: 48px;
+      height: 48px;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+
+    .media-name {
+      flex: 1;
+      font-size: 0.875rem;
+      color: var(--text);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .media-size {
+      font-family: 'DM Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+
+    .remove-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 1.1rem;
+      padding: 4px;
+      line-height: 1;
+    }
+
+    .remove-btn:hover { color: var(--red); }
+
+    .notice {
+      font-size: 0.8125rem;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      margin-top: 10px;
+      line-height: 1.5;
+    }
+
+    .notice.info { background: var(--accent-light); color: var(--muted); }
+    .notice.error { background: var(--red-bg); color: var(--red); }
+    .notice.success { background: var(--green-bg); color: var(--green); }
+
+    /* Generate button */
+    .btn-primary {
+      width: 100%;
+      padding: 12px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.9375rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.1s;
+      margin-top: 1.25rem;
+    }
+
+    .btn-primary:hover { opacity: 0.88; }
+    .btn-primary:active { transform: scale(0.99); }
+
+    /* Output */
+    .output-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      display: none;
+      text-align: center;
+    }
+
+    .output-card.visible { display: block; }
+
+    #qr-container {
+      display: inline-block;
+      padding: 16px;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+
+    #qr-container canvas,
+    #qr-container img {
+      display: block;
+    }
+
+    .output-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 1rem;
+      justify-content: center;
+    }
+
+    .btn-outline {
+      padding: 8px 20px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: transparent;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.875rem;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-outline:hover {
+      border-color: var(--accent);
+      background: var(--accent-light);
+    }
+
+    .output-label {
+      font-size: 0.8125rem;
+      color: var(--muted);
+      margin-top: 10px;
+      font-family: 'DM Mono', monospace;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      max-width: 260px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 2rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <h1>QR Generator</h1>
+    <p>Generate QR codes for URLs, text, WiFi, email, and photos.</p>
+  </header>
+
+  <!-- Input card -->
+  <div class="card">
+
+    <!-- Type tabs -->
+    <div class="tabs" id="type-tabs">
+      <button class="tab active" data-type="url">URL</button>
+      <button class="tab" data-type="text">Text</button>
+
+      <button class="tab" data-type="wifi">WiFi</button>
+      <button class="tab" data-type="email">Email</button>
+    </div>
+
+    <!-- URL -->
+    <div id="panel-url">
+      <div class="field">
+        <label>Link</label>
+        <input type="text" id="val-url" placeholder="https://example.com" />
+      </div>
+    </div>
+
+    <!-- Text -->
+    <div id="panel-text" style="display:none">
+      <div class="field">
+        <label>Text</label>
+        <input type="text" id="val-text" placeholder="Any text you want to encode" />
+      </div>
+    </div>
+
+  
+
+    <!-- WiFi -->
+    <div id="panel-wifi" style="display:none">
+      <div class="field">
+        <label>Network name (SSID)</label>
+        <input type="text" id="val-wifi-ssid" placeholder="MyHomeNetwork" />
+      </div>
+      <div class="field">
+        <label>Password</label>
+        <input type="text" id="val-wifi-pass" placeholder="Password" />
+      </div>
+    </div>
+
+    <!-- Email -->
+    <div id="panel-email" style="display:none">
+      <div class="field">
+        <label>Email address</label>
+        <input type="text" id="val-email" placeholder="you@example.com" />
+      </div>
+      <div class="field">
+        <label>Subject (optional)</label>
+        <input type="text" id="val-email-sub" placeholder="Hello!" />
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="generate()">Generate QR Code</button>
+  </div>
+
+  <!-- Output card -->
+  <div class="output-card" id="output-card">
+    <div id="qr-container"></div>
+    <p class="output-label" id="output-label"></p>
+    <div class="output-actions">
+      <button class="btn-outline" onclick="downloadPNG()">Download PNG</button>
+      <button class="btn-outline" onclick="downloadSVG()">Copy as SVG</button>
+    </div>
+  </div>
+
+
+</div>
+
+<!-- QRCode.js library -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+<script>
+  // ── State ──────────────────────────────────────────────
+  let currentType = 'url';
+  let mediaDataURL = null;
+
+  // ── Tab switching ──────────────────────────────────────
+  document.querySelectorAll('#type-tabs .tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#type-tabs .tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentType = btn.dataset.type;
+
+      ['url', 'text', 'wifi', 'email'].forEach(t => {
+        document.getElementById('panel-' + t).style.display = t === currentType ? '' : 'none';
+      });
+
+      hideOutput();
+    });
+  });
+
+
+
+  // ── Get the value to encode ────────────────────────────
+  function getValue() {
+    switch (currentType) {
+      case 'url':
+        return document.getElementById('val-url').value.trim();
+
+      case 'text':
+        return document.getElementById('val-text').value.trim();
+
+      
+
+      case 'wifi': {
+        const ssid = document.getElementById('val-wifi-ssid').value.trim();
+        const pass = document.getElementById('val-wifi-pass').value.trim();
+        if (!ssid) return null;
+        // Standard WiFi QR format
+        return 'WIFI:T:WPA;S:' + ssid + ';P:' + pass + ';;';
+      }
+
+      case 'email': {
+        const em = document.getElementById('val-email').value.trim();
+        const sub = document.getElementById('val-email-sub').value.trim();
+        if (!em) return null;
+        return sub ? 'mailto:' + em + '?subject=' + encodeURIComponent(sub) : 'mailto:' + em;
+      }
+    }
+  }
+
+  // ── Generate ───────────────────────────────────────────
+  function generate() {
+    const val = getValue();
+
+    if (!val) {
+      if (currentType === 'photo') {
+        alert('Please upload a file first. For large photos/videos, use the URL tab with a share link.');
+      } else {
+        alert('Please fill in the required field.');
+      }
+      return;
+    }
+
+    const container = document.getElementById('qr-container');
+    container.innerHTML = '';
+
+    try {
+      new QRCode(container, {
+        text: val,
+        width: 220,
+        height: 220,
+        correctLevel: QRCode.CorrectLevel.M  // M = medium error correction
+      });
+
+      // Show output card
+      const card = document.getElementById('output-card');
+      card.classList.add('visible');
+
+      // Label below QR
+      const label = document.getElementById('output-label');
+      label.textContent = val.length > 50 ? val.slice(0, 50) + '…' : val;
+
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    } catch (err) {
+      container.innerHTML = '<p style="color:#c0392b; font-size:0.875rem; padding:1rem;">Data too large to encode. Try a shorter value or use a URL instead.</p>';
+      document.getElementById('output-card').classList.add('visible');
+    }
+  }
+
+  // ── Download PNG ───────────────────────────────────────
+  function downloadPNG() {
+    // QRCode.js renders both a canvas and an img — use canvas for best quality
+    const canvas = document.querySelector('#qr-container canvas');
+    const img    = document.querySelector('#qr-container img');
+    const src    = canvas ? canvas.toDataURL('image/png') : (img ? img.src : null);
+    if (!src) return;
+
+    const a = document.createElement('a');
+    a.href = src;
+    a.download = 'qrcode.png';
+    a.click();
+  }
+
+  // ── Copy as SVG (simple fallback) ─────────────────────
+  function downloadSVG() {
+    // QRCode.js doesn't natively output SVG, so we copy the PNG data URI
+    // wrapped in an SVG <image> element — opens in any vector editor
+    const canvas = document.querySelector('#qr-container canvas');
+    if (!canvas) return;
+
+    const dataURL = canvas.toDataURL('image/png');
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="220" height="220">
+  <image href="${dataURL}" width="220" height="220"/>
+</svg>`;
+
+    // Copy to clipboard
+    navigator.clipboard.writeText(svg).then(() => {
+      const btn = event.target;
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy as SVG', 1800);
+    });
+  }
+
+  // ── Helpers ────────────────────────────────────────────
+  function hideOutput() {
+    document.getElementById('output-card').classList.remove('visible');
+    document.getElementById('qr-container').innerHTML = '';
+  }
+
+  // Allow Enter key to trigger generation
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') generate();
+  });
+</script>
+
+</body>
+</html>
